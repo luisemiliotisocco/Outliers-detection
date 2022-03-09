@@ -1,0 +1,36 @@
+---
+title: "Outlier detection"
+description: |
+  Property prices in Buenos Aires City.
+author:
+  - name: Luis Emilio Tisocco
+    url: https://luisemiliotisocco.github.io/
+    affiliation: Github
+    affiliation_url: https://github.com/luisemiliotisocco
+date: "`r Sys.Date()`"
+output: distill::distill_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+For this analysis, we'll be using the following libraries:
+
+```{r}
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(ggmap)
+
+options(scipen=999) #turn off scientific notation
+```
+
+\# Data understanting and preparation
+
+Let's load the all the properties on sale, published on Argenprop during 2021:
+
+```{r}
+properties <- st_read("data/real-estate/Deptos_Vta_Anual_2021.shp")
+head(properties)
+```
