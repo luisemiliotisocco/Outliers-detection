@@ -1,0 +1,37 @@
+---
+title: "Outlier detection"
+subtitle: "Property prices in Buenos Aires"
+author: "Luis Emilio Tisocco"
+date: "7/3/2022"
+output:
+  html_document:
+    code_folding: show
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    theme: simple
+    highlight: tango
+center: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+***
+# 1. Outliers by definition
+
+>
+<strong> Outliers are values within the dataset that vary greatly from the others. They're either much larger, or significantly smaller. Outliers may indicate variabilities in a measurement,                experimental errors, or a novelty. </strong>
+</p>
+
+Cleaning up the data requires some kind of treatment of extreme values to make sure we don't misinterpret the results due to non representative instances. If we're analysing housing prices for a city, a generic example could be mixing up the average apartment units with luxury houses. This, might lead to wrong results...
+
+
+```{r}
+sum()
+#kjdaksd
+
+```
+

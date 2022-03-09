@@ -8,25 +8,38 @@ output:
     code_folding: show
     toc: true
     toc_float:
-      collapsed: true
+      collapsed: false
       smooth_scroll: true
-    theme: united
+    theme: simple
     highlight: tango
+center: true
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+***
+# 1. Outliers by definition
 
-For this analysis, we'll be using the following libraries: 
+>
+<strong> Outliers are values within the dataset that vary greatly from the others. They're either much larger, or significantly smaller. Outliers may indicate variabilities in a measurement,                experimental errors, or a novelty. </strong>
+</p>
+
+Cleaning up the data requires some kind of treatment of extreme values to make sure we don't misinterpret the results due to non representative instances. If we're analysing housing prices for a city, a generic example could be mixing up the average apartment units with luxury houses. This, might lead to wrong results...
+<br> 
+<br> 
+<p align="center">![](data/gif/3.gif)</p>
+<br> 
+
+# 2. Understanting and preparation the database
+
+For this analysis, we'll be analysis the housing price in Buenos Aires, using the following libraries:
 
 ```{r message=FALSE, warning=FALSE}
 library(ggplot2)
-library(ggmap)
 library(knitr)
 library(leaflet)
-library(osmdata)
 library(sf)
 library(tidyverse)
 library(ggridges)
@@ -36,11 +49,9 @@ library(ggridges)
 options(scipen=999) #turn off scientific notation
 ```
 
-# 1. Data understanting and preparation
-    
-## 1.1 Loading data
+## 2.1 Loading the data
 
-Let's load the all the properties on sale, published on Argenprop during 2021 and explore what's in it:
+Let's load the all the properties on sale published on [Argenprop](https://www.argenprop.com/) during 2021 and explore what's in it. Wel'll also load the geographical boundaries of the city, available in [Buenos Aires Data](https://data.buenosaires.gob.ar/dataset/barrios). 
 
 ```{r message=FALSE, warning=FALSE, paged.print=TRUE}
 #We'll be using these 2 shape files:
@@ -52,25 +63,27 @@ neighbourhoods <- st_read('data/neighbourhood/barrios_badata.shp') %>%
 
 properties <- st_read('data/real-estate/Deptos_Vta_Anual_2021.shp') %>% 
     st_transform(4326) %>% 
-    st_join(neighbourhoods) # geo info
+    st_join(neighbourhoods) # adding geo info
 
 names(properties)
 ```
+<br> 
 
-We'll keep the property prices and neighbourhood columns:
+We'll keep the property prices, surface and neighbourhood columns:
 
 ```{r message=FALSE, warning=FALSE}
 properties <-  properties %>%  
-    select(OBJECTID, DOLARES, U_S_M2, NEIGHBOURHOOD) %>% 
-    rename(USD=DOLARES,
+    select(OBJECTID, DOLARES, M2, U_S_M2, NEIGHBOURHOOD) %>% # selection of columns 
+    rename(USD=DOLARES, 
            USDm2=U_S_M2)
 
 kable(head(properties))
 ```
 
+## 2.2 Spatial distribution of properties
+<br> 
 
-## 1.2 Spatial distribution of properties
-
+What's the geographical distribution of the price?
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 properties <- properties %>%  
@@ -79,32 +92,39 @@ properties <- properties %>%
 ```
 
 ```{r message=FALSE, warning=FALSE, out.width = '100%'}
-qpal <- colorQuantile('RdYlGn', reverse=TRUE, properties$USDm2, n = 10)
+qpal <- colorQuantile('YlOrRd', properties$USDm2, n = 5)
 
 leaflet(properties) %>%
   setView(-58.44104, -34.62264, zoom = 11) %>% 
   addTiles() %>%
   addProviderTiles(providers$CartoDB) %>%
-  addCircles(lng = ~long, lat = ~lat, weight = 5,
+  addCircles(lng = ~long, lat = ~lat, weight = 3,
              fillOpacity = .2, color = ~qpal(USDm2),
              popup = ~ paste('<strong>','Neighbourhood: ','</strong>', NEIGHBOURHOOD, '<br/>',
                              '<strong>', 'USD/m2: ', '</strong>', USDm2)) %>% 
 
    addLegend("bottomright", pal = qpal, values = ~USDm2, 
-            title = "Price deciles", opacity = 0.75) 
+            title = "Price quintiles", opacity = 0.75) 
 ```
 
+<br> 
+Higher values tend to cluster along the north precinct and plumb when moving towards the South of the City.
+<br> 
 
-## 1.3 Unrepresentative values
+## 2.3 Non representative values
 
-```{r, message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
 ggplot(properties)+
     geom_boxplot(aes(x=USDm2, y=NEIGHBOURHOOD, fill=NEIGHBOURHOOD), show.legend = FALSE) +
     scale_fill_viridis_d(option = 'magma')+
+    labs(x='USD/m2',
+         y='NEIGHBOURHOOD',
+         title='Prices distribution by neighbourhood',
+         subtitle='City of Buenos Aires')+
     theme_minimal()
 ```
 
-Let's find out the median price for each neighborhood to add it to the database:
+Let's find out the median price for each neighborhood to arrange the database:
 
 ```{r}
 mean_1 <- properties %>% 
@@ -116,22 +136,34 @@ mean_1 <- properties %>%
 properties <- left_join(properties, mean_1, by='NEIGHBOURHOOD')
 ```
 
-
-```{r}
-p1 <- ggplot() +
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+p2 <- ggplot() +
     geom_density_ridges_gradient(data=properties, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_BEFORE), 
                                                                                     fill = ..x..),
-                                 color= 'grey50', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
-    geom_boxplot(data=properties,aes(x=USDm2, y=NEIGHBOURHOOD), fill='white', color='black', alpha=.3, show.legend = FALSE) +
+                                 color= 'grey20', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
   labs(title = 'Density plot per neighbourhood including extreme values') +
-    scale_fill_viridis_c(option = 'magma', direction = -1, alpha=.2)+
+    scale_fill_viridis_c(option = 'magma', direction = -1)+
     labs (x='USD/m2',
-          y='NEIGHBOURHOOD')+
+          y='NEIGHBOURHOOD',
+          title='Prices distribution by neighbourhood',
+          subtitle='City of Buenos Aires')+
     theme_minimal()
 
-p1
+p2
 ```
 
+Now, it's time to extract any extreme values, as they don't represent and tend to bias and distort the results. 
+
+We'll set the lower and higher limits as following:
+<br> 
+$$
+Lower\;outlier = Q1 - 1.5*IQR\\
+Higher outlier = Q1 - 1.5*IQR
+$$
+$$
+$$
+
+Let's get rid of them ASAP:
 
 ```{r message=FALSE, warning=FALSE}
 Q1=quantile(properties$USDm2, c(.25))
@@ -146,8 +178,11 @@ lim_high=Q3+1.5*IQR
 properties_filter <- filter(properties, USDm2 >lim_low & USDm2 < lim_high)
 ```
 
+**Done!**
 
-Now, let's add to the dataframe the mean price for each neighbourhood after bringing the outliers out of the sample
+6% of the instances have been left aside. Alternatively, if we didnt't want to lose any row, we could impute the values. 
+
+Now, let's add the mean price for each neighbourhood to the main dataframe after bringing the outliers out of the sample.
 
 ```{r message=FALSE, warning=FALSE}
 mean_2 <- properties_filter %>% 
@@ -158,29 +193,111 @@ mean_2 <- properties_filter %>%
 
 properties_filter <- left_join(properties_filter, mean_2, by='NEIGHBOURHOOD')
 
+# We'll be using differece this later:
 MEAN_N <- mean_1 %>% 
     left_join(mean_2, by='NEIGHBOURHOOD') %>% 
-    mutate(DIF=MEAN_AFTER/MEAN_BEFORE*100)
+    mutate(VAR=-(100-(MEAN_AFTER/MEAN_BEFORE)*100))
 ```
 
 
-Let's see what it looks like:
+It now looks like this:
 
 ```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
-p2 <- ggplot() +
+p3 <- ggplot() +
     geom_density_ridges_gradient(data=properties_filter, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_AFTER), 
                                                                                     fill = ..x..),
-                                 color= 'grey50', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
-    geom_boxplot(data=properties_filter,aes(x=USDm2, y=NEIGHBOURHOOD), fill='white', color='black', alpha=.3, show.legend = FALSE) +
-  labs(title = 'Density plot per neighbourhood including extreme values') +
-    scale_fill_viridis_c(option = 'magma', direction = -1, alpha=.2)+
+                                 color= 'grey20', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
+  labs(title = 'Density plot per neighbourhood excluding extreme values') +
+    scale_fill_viridis_c(option = 'magma', direction = -1)+
     labs (x='USD/m2',
           y='NEIGHBOURHOOD')+
     theme_minimal()
 
-p2
+p3
 ```
 
-We-ve managed to get a much more fitted data!
+**We-ve managed to get a much more fitted data!**
+
+<p align="center">![](data/gif/1.gif)</p>
 
 
+```{r message=FALSE, warning=FALSE, out.width = '100%'}
+ggplot()+
+    geom_point(data=properties, aes(x=M2, y=USD), color='darkred', size=1, alpha=.2) +
+    geom_point(data= properties_filter, aes(x=M2, y=USD), color='burlywood', size=1, alpha=.5) +
+        geom_smooth(data=properties, aes(x=M2, y=USD, color='All values'), method = "loess", alpha=.5, size=1.5, se = FALSE)+
+    geom_smooth(data=properties_filter, aes(x=M2, y=USD, color='Representative values only'), method = "loess", size=1.5, alpha=.5, se = FALSE)+
+    labs(x='TOTAL SURFACE (m2)',
+         y='PRICE (USD)',
+         title='Price/total surface',
+         subtitle='City of Buenos Aires',
+         caption = 'X axis uses log-10 scale', 
+         colour='Condition')+
+    scale_x_log10()+
+    scale_color_manual(values=c('All values'='darkred', 
+                               'Representative values only'='burlywood4'))+
+    theme_minimal()
+```
+
+
+# 3. Spatial distribution
+<br> 
+
+Is there any spatial pattern for the extreme values we can detect? This last sections aims to find out where the outliers are located within de city.
+
+## 3.1 By neighbourhood
+
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+ggplot()+
+    geom_point(data= properties, aes(x=USDm2, y=NEIGHBOURHOOD, color='All values'), show.legend = TRUE, size=1.5) +
+    geom_point(data= properties_filter, aes(x=USDm2, y=NEIGHBOURHOOD, color='Representative values only'), show.legend = TRUE, size=1.5) +
+      geom_vline(xintercept=lim_high, color="grey20", linetype="dashed", size=.5)+
+    geom_vline(xintercept=lim_low, color="grey20", linetype="dashed", size=.5)+
+    labs(x='TOTAL SURFACE (m2)',
+         y='PRICE (USD)',
+         title='Price/total surface',
+         subtitle='City of Buenos Aires',
+         caption = 'X axis uses log-10 scale',
+         color='Condition')+
+    scale_color_manual(values=c('All values'='darkred',
+                               'Representative values only'='burlywood'))+
+    theme_minimal()
+```
+<br> 
+
+Retiro, Recoleta, Puerto Madero and Belgrano tend to cluster the maximum extreme values. 
+
+Showing the values on a map makes much more sense.
+One thing left to do first, is to eliminate the non representative values:
+
+```{r}
+neighbourhoods <- neighbourhoods %>% left_join(MEAN_N, by='NEIGHBOURHOOD')
+
+properties_non_representative <- properties[!(properties$OBJECTID %in% properties_filter$OBJECTID),]
+
+palette2 <- c(high="grey80", low= "darkred")
+
+
+leaflet(properties_non_representative) %>%
+  setView(-58.44104, -34.62264, zoom = 11) %>% 
+  addTiles() %>%
+  addProviderTiles(providers$CartoDB) %>%
+    addPolygons(data=neighbourhoods, color = ~colorNumeric(palette2, neighbourhoods$VAR)(VAR),
+                popup = ~ paste('<strong>','MEAN VARIATION AFTER OUTLIER TREATMENT','</strong>','<br/>',
+                             '<strong>','Neighbourhood: ','</strong>', NEIGHBOURHOOD, '<br/>',
+                             '<strong>', 'Variation: ', '</strong>', round(VAR,2), ' %')) %>% 
+  addCircles(data=properties_filter, lng = ~long, lat = ~lat, weight = 3,
+             fillOpacity = .2, color = 'burlywood',
+             popup = ~ paste('<strong>','REPRESENTATIVE VALUE','</strong>','<br/>',
+                             '<strong>','Neighbourhood: ','</strong>', NEIGHBOURHOOD, '<br/>',
+                             '<strong>', 'USD/m2: ', '</strong>', USDm2)) %>% 
+      addCircles(data=properties_non_representative, lng = ~long, lat = ~lat, weight = 3,
+             fillOpacity = .2, color = 'darkred',
+             popup = ~ paste('<strong>','NON REPRESENTATIVE VALUE','</strong>','<br/>',
+                             '<strong>','Neighbourhood: ','</strong>', NEIGHBOURHOOD, '<br/>',
+                             '<strong>', 'USD/m2: ', '</strong>', USDm2))
+```
+
+<br> 
+
+<center><strong>Thanks for reading!</strong></center>
