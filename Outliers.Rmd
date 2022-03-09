@@ -11,9 +11,8 @@ output:
       collapsed: false
       smooth_scroll: true
     theme: simple
-    highlight: tango
+    highlight: textmate
 center: true
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -141,6 +140,7 @@ p2 <- ggplot() +
     geom_density_ridges_gradient(data=properties, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_BEFORE), 
                                                                                     fill = ..x..),
                                  color= 'grey20', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
+            geom_point(data=properties, aes(x = USDm2, y = NEIGHBOURHOOD), color='grey10', size=.5, alpha=.5) +
   labs(title = 'Density plot per neighbourhood including extreme values') +
     scale_fill_viridis_c(option = 'magma', direction = -1)+
     labs (x='USD/m2',
@@ -207,6 +207,7 @@ p3 <- ggplot() +
     geom_density_ridges_gradient(data=properties_filter, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_AFTER), 
                                                                                     fill = ..x..),
                                  color= 'grey20', scale = 3, rel_min_height = 0.01, show.legend = FALSE) +
+        geom_point(data=properties_filter, aes(x = USDm2, y = NEIGHBOURHOOD), color='grey10', size=.5, alpha=.5) +
   labs(title = 'Density plot per neighbourhood excluding extreme values') +
     scale_fill_viridis_c(option = 'magma', direction = -1)+
     labs (x='USD/m2',
@@ -217,9 +218,7 @@ p3
 ```
 
 **We-ve managed to get a much more fitted data!**
-
-<p align="center">![](data/gif/1.gif)</p>
-
+<br> <br> 
 
 ```{r message=FALSE, warning=FALSE, out.width = '100%'}
 ggplot()+
