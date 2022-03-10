@@ -112,7 +112,7 @@ Higher values tend to cluster along the north precinct and plumb when moving tow
 
 ## 2.3 Non representative values
 
-```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=10}
 ggplot(properties)+
     geom_boxplot(aes(x=USDm2, y=NEIGHBOURHOOD, fill=NEIGHBOURHOOD), show.legend = FALSE) +
     scale_fill_viridis_d(option = 'magma')+
@@ -135,7 +135,7 @@ mean_1 <- properties %>%
 properties <- left_join(properties, mean_1, by='NEIGHBOURHOOD')
 ```
 
-```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=10}
 p2 <- ggplot() +
     geom_density_ridges_gradient(data=properties, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_BEFORE), 
                                                                                     fill = ..x..),
@@ -202,7 +202,7 @@ MEAN_N <- mean_1 %>%
 
 It now looks like this:
 
-```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=10}
 p3 <- ggplot() +
     geom_density_ridges_gradient(data=properties_filter, aes(x = USDm2, y = reorder(NEIGHBOURHOOD, -MEAN_AFTER), 
                                                                                     fill = ..x..),
@@ -218,7 +218,8 @@ p3
 ```
 
 **We-ve managed to get a much more fitted data!**
-<br> <br> 
+<br> 
+<br> 
 
 ```{r message=FALSE, warning=FALSE, out.width = '100%'}
 ggplot()+
@@ -246,7 +247,7 @@ Is there any spatial pattern for the extreme values we can detect? This last sec
 
 ## 3.1 By neighbourhood
 
-```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=12}
+```{r message=FALSE, warning=FALSE, out.width = '100%', fig.height=10}
 ggplot()+
     geom_point(data= properties, aes(x=USDm2, y=NEIGHBOURHOOD, color='All values'), show.legend = TRUE, size=1.5) +
     geom_point(data= properties_filter, aes(x=USDm2, y=NEIGHBOURHOOD, color='Representative values only'), show.legend = TRUE, size=1.5) +
@@ -274,7 +275,7 @@ neighbourhoods <- neighbourhoods %>% left_join(MEAN_N, by='NEIGHBOURHOOD')
 
 properties_non_representative <- properties[!(properties$OBJECTID %in% properties_filter$OBJECTID),]
 
-palette2 <- c(high="grey80", low= "darkred")
+palette2 <- c(high="darkred", low= "grey80")
 
 
 leaflet(properties_non_representative) %>%
@@ -300,3 +301,7 @@ leaflet(properties_non_representative) %>%
 <br> 
 
 <center><strong>Thanks for reading!</strong></center>
+<br> 
+<br> 
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
